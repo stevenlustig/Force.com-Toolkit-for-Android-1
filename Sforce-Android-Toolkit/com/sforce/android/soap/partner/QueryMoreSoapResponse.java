@@ -40,7 +40,7 @@ public class QueryMoreSoapResponse implements Response {
 			boolean done = false;
 			SObject currentSObject=null;
 			boolean inRecord=false;
-			String prevType=null;
+			String currType = null;
 			while (eventType != XmlPullParser.END_DOCUMENT && !done){
 				String name = null;
 				switch (eventType){
@@ -48,7 +48,6 @@ public class QueryMoreSoapResponse implements Response {
 						break;
 					case XmlPullParser.START_TAG:
 						name = xpp.getName();
-						//System.out.println("start tag name="+name);
 						if (name.equalsIgnoreCase(DONE)){
 							if (!inRecord){
 								result.setDone(Boolean.parseBoolean(xpp.nextText()));
@@ -70,35 +69,36 @@ public class QueryMoreSoapResponse implements Response {
 						} else if(name.equalsIgnoreCase(TYPE)){
 							if (inRecord){
 								String type=xpp.nextText();
-								if ((prevType==null)|| (type.equals(prevType))){
-									currentSObject.setType(type);
-									prevType=type;
-								}
+	                            if ((currType == null) || (type.equals(currType))) {
+	                                currentSObject.setType(type);
+	                                currType = type;
+	                            }
+	                            currType = type;
 							}
 						} else if(name.equalsIgnoreCase(ID)){
 							if (inRecord){
-								if (prevType.equals(currentSObject.getType())){
-									String Id=xpp.nextText();
-									currentSObject.setId(Id);
-									currentSObject.setField(ID, Id);
-								}
+	                            if (currType.equals(currentSObject.getType())) {
+	                                String Id = xpp.nextText();
+	                                currentSObject.setId(Id);
+	                                currentSObject.setField(ID, Id);
+	                            }
 							}
 						} else if (!(currentSObject==null)){
 								if (xpp.getPrefix().equals("sf") && (xpp.getAttributeCount()==0)){
-									if ((inRecord) && (prevType.equals(currentSObject.getType()))) {
-										String value=xpp.nextText();
-										currentSObject.setField(name, value);
-									}
+		                            if (inRecord) {
+		                                String value = xpp.nextText();
+		                                currentSObject.setField(name, value);
+		                            }
 								}
 						} 
 					break;
 					case XmlPullParser.END_TAG:
 						name = xpp.getName();
-						//System.out.println("end tag name="+name);
 						if (name.equalsIgnoreCase(RECORDS)){
 							if (currentSObject.getType()!=null){
 								result.getRecords().add(currentSObject);
 								inRecord=false;
+								currType = null;
 							}
 						}
 						else if (name.equalsIgnoreCase(QUERY_MORE_RESPONSE)){

@@ -42,6 +42,18 @@ public class Salesforce {
       listener.setResponseListener(queryResponseListener);
   	  asf.request(requestFields, listener);
   }
+  
+  public static void queryWithLocator(String queryString, ResponseListener queryResponseListener)
+  {
+	  HashMap<String, String> requestFields=new HashMap<String, String>();
+      requestFields.put("requestType", "query");
+      requestFields.put("sessionId", sf.getSessionId());
+      requestFields.put("queryString", queryString);
+      requestFields.put("responseType", "query");
+      BaseRequestListener listener=new QueryWithLocatorRequestListener();
+      listener.setResponseListener(queryResponseListener);
+  	  asf.request(requestFields, listener);
+  }
 
   public static void query(String queryString, Integer batchSize, ResponseListener queryResponseListener){
 	  HashMap<String, String> requestFields=new HashMap<String, String>();
@@ -88,6 +100,8 @@ public class Salesforce {
 	    requestFields.put("responseType", "queryMore");
 	    BaseRequestListener listener=new QueryMoreRequestListener();
 	    listener.setResponseListener(queryMoreResponseListener);
+	    
+	    Log.d(TAG, "QueryMore executed...");
 		asf.request(requestFields, listener);	  
   }
 
@@ -219,7 +233,6 @@ public class Salesforce {
     	    QuerySoapResponse queryresponse=(QuerySoapResponse) qresponse;
 			QueryResult qresult=queryresponse.getResult();
 	    	ArrayList<SObject> records=qresult.getRecords();
-
 	    	getResponseListener().onComplete(records);
       }
   }
@@ -229,12 +242,18 @@ public class Salesforce {
       public void onComplete(final Object qresponse) {
 			QuerySoapResponse queryresponse=(QuerySoapResponse) qresponse;
 			QueryResult qresult=queryresponse.getResult();
-	    	ArrayList<SObject> records=qresult.getRecords();
+	    	ArrayList<SObject> records=qresult.getRecords();	    	
 	    	String queryLocator=qresult.getQueryLocator();
-	    	HashMap<String, Object> qresults=new HashMap<String, Object>();
-	    	qresults.put("records", records);
-	    	qresults.put("queryLocator", queryLocator);
-	    	getResponseListener().onComplete(qresults);
+	    	String size=new Integer(qresult.getSize()).toString();
+	    	
+	    	HashMap<String, Object> qResult=new HashMap<String, Object>();
+	    	qResult.put("records", records);
+	    	Log.d(TAG, "Query Locator: " + queryLocator);
+	    	qResult.put("queryLocator", queryLocator);
+	    	qResult.put("size", size);
+	    	qResult.put("isDone", qresult.isDone());
+	    	
+	    	getResponseListener().onComplete(qResult);
       }
   }
   
@@ -251,12 +270,12 @@ public class Salesforce {
       public void onComplete(final Object qmresponse) {
 			QueryMoreSoapResponse querymoreresponse=(QueryMoreSoapResponse) qmresponse;
 			final QueryResult qresult=querymoreresponse.getResult();
-			ArrayList<SObject> resultArray=qresult.getRecords();
+			ArrayList<SObject> records=qresult.getRecords();
 			String queryLocator=qresult.getQueryLocator();
 			String size=new Integer(qresult.getSize()).toString();
 			String isDone=new Boolean(qresult.isDone()).toString();
 			HashMap<String, Object> qmResult=new HashMap<String, Object>();
-			qmResult.put("resultArray", resultArray);
+			qmResult.put("records", records);
 			qmResult.put("queryLocator", queryLocator);
 			qmResult.put("size", size);
 			qmResult.put("isDone", isDone);
